@@ -4,7 +4,6 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
 const app = express();
-const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
@@ -15,9 +14,8 @@ if (!process.env.DB_USER || !process.env.DB_PASS) {
   throw new Error('Missing DB credentials in environment variables');
 }
 
-
 // MongoDB Setup
-const uri = `mongodb+srv://airbnbDB:${process.env.DB_PASS}@cluster0.q6abx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.q6abx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -33,19 +31,17 @@ app.get('/', (req, res) => {
 });
 
 // MongoDB and Routes Setup
-async function run() {
+async function connectDB() {
   try {
     await client.connect();
     const db = client.db("airbnbDB");
-    
+
     const DataOfHotelCollection = db.collection("hotelData");
     const usersDataCollection = db.collection("users");
     const AllHotelListCollection = db.collection("hotelList");
     const earningListCollection = db.collection("earningList");
 
-    // Routes
-
-    // Fetch hotel data
+    // Define routes
     app.get('/hotel-data', async (req, res) => {
       try {
         const result = await DataOfHotelCollection.find().toArray();
@@ -56,7 +52,6 @@ async function run() {
       }
     });
 
-    // Fetch users data
     app.get('/users', async (req, res) => {
       try {
         const result = await usersDataCollection.find().toArray();
@@ -67,7 +62,6 @@ async function run() {
       }
     });
 
-    // Fetch hotel list
     app.get('/hotels-list', async (req, res) => {
       try {
         const result = await AllHotelListCollection.find().toArray();
@@ -78,7 +72,6 @@ async function run() {
       }
     });
 
-    // Insert new hotel into list
     app.post('/hotels-list', async (req, res) => {
       try {
         const newItem = req.body;
@@ -90,7 +83,6 @@ async function run() {
       }
     });
 
-    // Fetch earnings data
     app.get('/earnings', async (req, res) => {
       try {
         const result = await earningListCollection.find().toArray();
@@ -101,7 +93,6 @@ async function run() {
       }
     });
 
-    // Insert new earnings data
     app.post('/earnings', async (req, res) => {
       try {
         const newItem = req.body;
@@ -113,19 +104,17 @@ async function run() {
       }
     });
 
-    // Confirm successful MongoDB connection
+    // Ping DB
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log("Pinged MongoDB Successfully!");
 
   } catch (error) {
     console.error('Error connecting to MongoDB:', error);
   }
 }
 
-// Call the run function (setup MongoDB and routes)
-run().catch(console.dir);
+// Initialize MongoDB Connection
+connectDB();
 
-// Start the server (independent of DB connection)
-app.listen(port, () => {
-  console.log(`Airbnb server is running on port ${port}`);
-});
+// IMPORTANT: Export the Express app (No app.listen())
+module.exports = app;
